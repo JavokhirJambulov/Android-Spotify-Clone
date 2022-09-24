@@ -15,9 +15,8 @@ class MusicPlayerEventListener(
         super.onPlaybackStateChanged(playbackState)
         if(playbackState == Player.STATE_READY) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                if (Build.VERSION.SDK_INT >= 33) {
-                    musicService.stopForeground(Service.STOP_FOREGROUND_DETACH)
-                }
+                musicService.stopForeground(Service.STOP_FOREGROUND_DETACH)
+
             }
         }
     }

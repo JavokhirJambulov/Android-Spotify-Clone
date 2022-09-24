@@ -1,3 +1,4 @@
+
 package uz.javokhirjambulov.spotifyclone.exoplayer
 
 import android.app.PendingIntent
@@ -14,14 +15,15 @@ import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.ext.mediasession.TimelineQueueNavigator
 import com.google.android.exoplayer2.upstream.DefaultDataSource
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.*
 import uz.javokhirjambulov.spotifyclone.exoplayer.callbacks.MusicPlaybackPreparer
 import uz.javokhirjambulov.spotifyclone.exoplayer.callbacks.MusicPlayerEventListener
 import uz.javokhirjambulov.spotifyclone.exoplayer.callbacks.MusicPlayerNotificationListener
 import uz.javokhirjambulov.spotifyclone.other.Constants.MEDIA_ROOT_ID
 import uz.javokhirjambulov.spotifyclone.other.Constants.NETWORK_ERROR
-import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.*
 import javax.inject.Inject
+
 
 private const val SERVICE_TAG = "MusicService"
 
@@ -98,11 +100,15 @@ class MusicService : MediaBrowserServiceCompat() {
         mediaSessionConnector = MediaSessionConnector(mediaSession)
         mediaSessionConnector.setQueueNavigator(MusicQueueNavigator())
         mediaSessionConnector.setPlaybackPreparer(musicPlaybackPreparer)
-        mediaSessionConnector.setPlayer(exoPlayer)
+
 
         musicPlayerEventListener = MusicPlayerEventListener(this)
-        exoPlayer.addListener(musicPlayerEventListener)
-        musicNotificationManager.showNotification(exoPlayer)
+        serviceScope.launch {
+            exoPlayer.addListener(musicPlayerEventListener)
+            mediaSessionConnector.setPlayer(exoPlayer)
+            musicNotificationManager.showNotification(exoPlayer)
+        }
+
     }
     private inner class MusicQueueNavigator:TimelineQueueNavigator(mediaSession){
         override fun getMediaDescription(player: Player, windowIndex: Int): MediaDescriptionCompat {
@@ -116,22 +122,32 @@ class MusicService : MediaBrowserServiceCompat() {
         playNow: Boolean
     ) {
         val curSongIndex = if(curPlayingSong == null) 0 else songs.indexOf(itemToPlay)
-        exoPlayer.setMediaSource(firebaseMusicSource.asMediaSource(dataSourceFactory))
-        exoPlayer.seekTo(curSongIndex, 0L)
-        exoPlayer.playWhenReady = playNow
+        serviceScope.launch {
+            exoPlayer.setMediaSource(firebaseMusicSource.asMediaSource(dataSourceFactory))
+            exoPlayer.seekTo(curSongIndex, 0L)
+            exoPlayer.playWhenReady = playNow
+        }
+
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
-        exoPlayer.stop()
+        serviceScope.launch {
+            exoPlayer.stop()
+        }
     }
 
     override fun onDestroy() {
         super.onDestroy()
+
+
+        serviceScope.launch {
+            exoPlayer.removeListener(musicPlayerEventListener)
+            exoPlayer.release()
+        }
+        musicNotificationManager.closeNotification()
         serviceScope.cancel()
 
-        exoPlayer.removeListener(musicPlayerEventListener)
-        exoPlayer.release()
     }
 
     override fun onGetRoot(

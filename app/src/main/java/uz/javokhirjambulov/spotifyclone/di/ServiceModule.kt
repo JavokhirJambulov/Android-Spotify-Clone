@@ -1,8 +1,10 @@
+
 package uz.javokhirjambulov.spotifyclone.di
 
 import android.content.Context
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.audio.AudioAttributes
 import com.google.android.exoplayer2.upstream.DefaultDataSource
 import uz.javokhirjambulov.spotifyclone.data.remote.MusicDatabase

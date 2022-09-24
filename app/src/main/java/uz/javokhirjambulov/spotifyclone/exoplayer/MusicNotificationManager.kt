@@ -40,9 +40,17 @@ class MusicNotificationManager(
 
     }
 
+
+
+
+
     fun showNotification(player: Player) {
         notificationManager.setPlayer(player)
     }
+    fun closeNotification(){
+        notificationManager.setPlayer(null)
+    }
+
 
     private inner class DescriptionAdapter(
         private val mediaController: MediaControllerCompat
